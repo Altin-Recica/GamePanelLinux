@@ -1,0 +1,227 @@
+{{define "server_rust.html"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Server.Name}} - Rust</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(14px); }
+    .gradient-ring { background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.2), transparent 35%), radial-gradient(circle at 80% 0%, rgba(167,139,250,0.18), transparent 30%), radial-gradient(circle at 40% 80%, rgba(74,222,128,0.18), transparent 35%); }
+    .pill { border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="fixed inset-0 gradient-ring pointer-events-none"></div>
+  <div class="relative max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <p class="uppercase tracking-[0.3rem] text-slate-400 text-xs">Rust Server</p>
+        <h1 class="text-4xl font-semibold text-white">{{.Server.Name}}</h1>
+        <p class="text-slate-400 text-sm">ID: {{.Server.ID}}</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Back</a>
+        <form action="/logout" method="post">
+          <button class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Logout</button>
+        </form>
+        <form action="/servers/{{.Server.ID}}/delete" method="post" onsubmit="return confirm('Delete this server?');">
+          <button class="px-3 py-2 rounded-lg bg-rose-600 text-white border border-rose-500 hover:bg-rose-500">Delete</button>
+        </form>
+      </div>
+    </header>
+
+    <section>
+      {{template "partials/server_rust_card.html" dict "Server" .Server "Rust" .Rust "Status" .Status}}
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Rust Console</p>
+            <p class="text-slate-300 text-sm">Live stream (last 400 lines)</p>
+          </div>
+          <div id="rust-player" class="text-right text-sm text-slate-400" hx-get="/servers/{{.Server.ID}}/playercount" hx-trigger="load" hx-swap="innerHTML"></div>
+        </div>
+        <div class="flex items-center gap-2 mb-3">
+          <form hx-post="/servers/{{.Server.ID}}/command" hx-target="#rust-console" hx-swap="innerHTML" class="w-full flex gap-2">
+            <input name="command" placeholder="say Hello world" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400" />
+            <button type="submit" class="px-3 py-2 rounded-lg bg-cyan-500 text-slate-900 font-semibold hover:bg-cyan-400">Send</button>
+          </form>
+          <button class="pill bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" hx-get="/servers/{{.Server.ID}}/playercount" hx-target="#rust-player" hx-swap="innerHTML">Refresh</button>
+        </div>
+        <div id="rust-console" class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 h-72 overflow-y-auto text-xs font-mono text-slate-200" hx-get="/servers/{{.Server.ID}}/console" hx-trigger="load, every 2s" hx-target="this" hx-swap="innerHTML">
+          {{template "partials/console.html" dict "Lines" .ConsoleLines}}
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Rust Config</p>
+            <p class="text-slate-300 text-sm">Syncs to server.cfg and launch args.</p>
+          </div>
+          <div id="rust-config-status" class="text-sm text-slate-400"></div>
+        </div>
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-3" hx-post="/servers/{{.Server.ID}}/config" hx-target="#rust-config-status" hx-swap="outerHTML">
+          <input type="hidden" name="id" value="{{.Server.ID}}">
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">Server name</label>
+            <input name="server_name" value="{{.Rust.ServerName}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">Description</label>
+            <input name="description" value="{{.Rust.Description}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Max players</label>
+            <input name="max_players" value="{{.Rust.MaxPlayers}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Port</label>
+            <input name="port" value="{{.Rust.Port}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Seed</label>
+            <input name="seed" value="{{.Rust.Seed}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">World size</label>
+            <input name="world_size" value="{{.Rust.WorldSize}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Map type</label>
+            <select name="map_type" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option value="Procedural Map" {{if eq .Rust.MapType "Procedural Map"}}selected{{end}}>Procedural Map</option>
+              <option value="Barren" {{if eq .Rust.MapType "Barren"}}selected{{end}}>Barren</option>
+              <option value="HapisIsland" {{if eq .Rust.MapType "HapisIsland"}}selected{{end}}>Hapis Island</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Level URL (optional)</label>
+            <input name="level_url" value="{{.Rust.LevelURL}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Save interval (s)</label>
+            <input name="save_interval" value="{{.Rust.SaveInterval}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Decay scale</label>
+            <input name="decay_scale" value="{{ printf "%.2f" .Rust.DecayScale }}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Crafting speed</label>
+            <input name="crafting_speed" value="{{ printf "%.2f" .Rust.CraftingSpeed }}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="enable_eac" {{if .Rust.EnableEAC}}checked{{end}}>
+            <label class="text-xs text-slate-300">Enable EAC (disable for linux)</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="secure" {{if .Rust.Secure}}checked{{end}}>
+            <label class="text-xs text-slate-300">Secure mode (disable for linux)</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="encryption" {{if .Rust.Encryption}}checked{{end}}>
+            <label class="text-xs text-slate-300">Encryption (disable for linux)</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="pve_mode" {{if .Rust.PVEMode}}checked{{end}}>
+            <label class="text-xs text-slate-300">PVE mode</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="enable_rcon" {{if .Rust.EnableRCON}}checked{{end}}>
+            <label class="text-xs text-slate-300">Enable RCON</label>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">RCON port</label>
+            <input name="rcon_port" value="{{.Rust.RconPort}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">RCON password</label>
+            <input name="rcon_password" value="{{.Rust.RconPassword}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Identity</label>
+            <input name="identity" value="{{.Rust.Identity}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Binary path</label>
+            <input name="binary_path" value="{{.Rust.BinaryPath}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Working dir</label>
+            <input name="working_dir" value="{{.Rust.WorkingDir}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">Extra launch args</label>
+            <textarea name="extra_launch_args" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">{{.Rust.ExtraLaunchArgs}}</textarea>
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">Extra server.cfg lines</label>
+            <textarea name="extra_server_cfg" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">{{.Rust.ExtraServerCfg}}</textarea>
+          </div>
+          <div class="col-span-2 flex justify-end">
+            <button class="px-4 py-2 rounded-lg bg-cyan-500 text-slate-900 font-semibold hover:bg-cyan-400">Save Rust Config</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-4">
+      <div class="glass rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Scheduling</p>
+            <p class="text-slate-300 text-sm">Daily or one-off restarts/start/stop.</p>
+          </div>
+        </div>
+        <form class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4" hx-post="/servers/{{.Server.ID}}/schedules" hx-target="#schedule-list" hx-swap="outerHTML">
+          <div>
+            <label class="text-xs text-slate-400">Action</label>
+            <select name="action" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option value="restart">Restart</option>
+              <option value="start">Start</option>
+              <option value="stop">Stop</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Time</label>
+            <input type="time" name="time" value="{{.HumanTimeNow}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Frequency</label>
+            <select name="frequency" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option value="daily">Daily</option>
+              <option value="once">Once</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button class="w-full px-4 py-2 rounded-lg bg-indigo-500 text-slate-900 font-semibold hover:bg-indigo-400">Add</button>
+          </div>
+        </form>
+        <div id="schedule-list">
+          {{template "partials/schedule_list.html" dict "Schedules" .Schedules}}
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    const scrollEnd = (id) => {
+      const el = document.getElementById(id);
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+    scrollEnd('rust-console');
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+      if (evt.target && evt.target.id === 'rust-console') {
+        scrollEnd(evt.target.id);
+      }
+    });
+  </script>
+</body>
+</html>
+{{end}}

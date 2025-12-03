@@ -1,0 +1,9 @@
+{{define "partials/console.html"}}
+<div class="space-y-1">
+  {{range .Lines}}
+    <div class="text-xs text-slate-100 font-mono">{{.}}</div>
+  {{else}}
+    <div class="text-sm text-slate-500">No output yet.</div>
+  {{end}}
+</div>
+{{end}}

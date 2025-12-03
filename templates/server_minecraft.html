@@ -1,0 +1,336 @@
+{{define "server_minecraft.html"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{.Server.Name}} - Minecraft</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(14px); }
+    .gradient-ring { background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.2), transparent 35%), radial-gradient(circle at 80% 0%, rgba(167,139,250,0.18), transparent 30%), radial-gradient(circle at 40% 80%, rgba(74,222,128,0.18), transparent 35%); }
+    .pill { border-radius: 999px; padding: 0.2rem 0.8rem; font-size: 0.75rem; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="fixed inset-0 gradient-ring pointer-events-none"></div>
+  <div class="relative max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <p class="uppercase tracking-[0.3rem] text-slate-400 text-xs">Minecraft Server</p>
+        <h1 class="text-4xl font-semibold text-white">{{.Server.Name}}</h1>
+        <p class="text-slate-400 text-sm">ID: {{.Server.ID}}</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/" class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Back</a>
+        <form action="/logout" method="post">
+          <button class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Logout</button>
+        </form>
+        <form action="/servers/{{.Server.ID}}/delete" method="post" onsubmit="return confirm('Delete this server?');">
+          <button class="px-3 py-2 rounded-lg bg-rose-600 text-white border border-rose-500 hover:bg-rose-500">Delete</button>
+        </form>
+      </div>
+    </header>
+
+    <section>
+      {{template "partials/server_minecraft_card.html" dict "Server" .Server "Minecraft" .Minecraft "Status" .Status}}
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-4 border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Minecraft Console</p>
+            <p class="text-slate-300 text-sm">Live stream (last 400 lines)</p>
+          </div>
+          <div id="mc-player" class="text-right text-sm text-slate-400" hx-get="/servers/{{.Server.ID}}/playercount" hx-trigger="load" hx-swap="innerHTML"></div>
+        </div>
+        <div class="flex items-center gap-2 mb-3">
+          <form hx-post="/servers/{{.Server.ID}}/command" hx-target="#mc-console" hx-swap="innerHTML" class="w-full flex gap-2">
+            <input name="command" placeholder="say Welcome!" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+            <button type="submit" class="px-3 py-2 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400">Send</button>
+          </form>
+          <button class="pill bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700" hx-get="/servers/{{.Server.ID}}/playercount" hx-target="#mc-player" hx-swap="innerHTML">Refresh</button>
+        </div>
+        <div id="mc-console" class="bg-slate-900/70 border border-slate-800 rounded-xl p-3 h-72 overflow-y-auto text-xs font-mono text-slate-200" hx-get="/servers/{{.Server.ID}}/console" hx-trigger="load, every 2s" hx-target="this" hx-swap="innerHTML">
+          {{template "partials/console.html" dict "Lines" .ConsoleLines}}
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Minecraft Config</p>
+            <p class="text-slate-300 text-sm">Writes to server.properties and launch args.</p>
+          </div>
+          <div id="mc-config-status" class="text-sm text-slate-400"></div>
+        </div>
+        <form class="grid grid-cols-1 md:grid-cols-2 gap-3" hx-post="/servers/{{.Server.ID}}/config" hx-target="#mc-config-status" hx-swap="outerHTML">
+          <input type="hidden" name="id" value="{{.Server.ID}}">
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">MOTD</label>
+            <input name="motd" value="{{.Minecraft.MOTD}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Max players</label>
+            <input name="max_players" value="{{.Minecraft.MaxPlayers}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Port</label>
+            <input name="port" value="{{.Minecraft.Port}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Level name</label>
+            <input name="level_name" value="{{.Minecraft.LevelName}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Level seed</label>
+            <input name="level_seed" value="{{.Minecraft.LevelSeed}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Gamemode</label>
+            <select name="gamemode" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option {{if eq .Minecraft.Gamemode "survival"}}selected{{end}} value="survival">Survival</option>
+              <option {{if eq .Minecraft.Gamemode "creative"}}selected{{end}} value="creative">Creative</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Difficulty</label>
+            <select name="difficulty" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option {{if eq .Minecraft.Difficulty "easy"}}selected{{end}} value="easy">Easy</option>
+              <option {{if eq .Minecraft.Difficulty "normal"}}selected{{end}} value="normal">Normal</option>
+              <option {{if eq .Minecraft.Difficulty "hard"}}selected{{end}} value="hard">Hard</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="hardcore" {{if .Minecraft.Hardcore}}checked{{end}}>
+            <label class="text-xs text-slate-300">Hardcore</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="pvp" {{if .Minecraft.PVP}}checked{{end}}>
+            <label class="text-xs text-slate-300">PVP</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="allow_flight" {{if .Minecraft.AllowFlight}}checked{{end}}>
+            <label class="text-xs text-slate-300">Allow flight</label>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">View distance</label>
+            <input name="view_distance" value="{{.Minecraft.ViewDistance}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Simulation distance</label>
+            <input name="simulation_distance" value="{{.Minecraft.SimulationDist}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="online_mode" {{if .Minecraft.OnlineMode}}checked{{end}}>
+            <label class="text-xs text-slate-300">Online mode</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="whitelist" {{if .Minecraft.Whitelist}}checked{{end}}>
+            <label class="text-xs text-slate-300">Whitelist enabled</label>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" name="enable_rcon" {{if .Minecraft.EnableRCON}}checked{{end}}>
+            <label class="text-xs text-slate-300">Enable RCON</label>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">RCON port</label>
+            <input name="rcon_port" value="{{.Minecraft.RconPort}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">RCON password</label>
+            <input name="rcon_password" value="{{.Minecraft.RconPassword}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Min RAM (Xms)</label>
+            <input name="min_ram" value="{{.Minecraft.MinRAM}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Max RAM (Xmx)</label>
+            <input name="max_ram" value="{{.Minecraft.MaxRAM}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="col-span-2">
+            <label class="text-xs text-slate-400">Extra JVM args</label>
+            <textarea name="extra_jvm_args" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">{{.Minecraft.ExtraJVMArgs}}</textarea>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Jar path</label>
+            <input name="jar_path" value="{{.Minecraft.JarPath}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Java path</label>
+            <input name="java_path" value="{{.Minecraft.JavaPath}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Working dir</label>
+            <input name="working_dir" value="{{.Minecraft.WorkingDir}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div class="col-span-2 flex justify-end">
+            <button class="px-4 py-2 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400">Save Minecraft Config</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="glass rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Minecraft Jar Download</p>
+            <p class="text-slate-300 text-sm">Download a server jar to your configured path.</p>
+          </div>
+          <div id="mc-install-status" class="text-sm text-slate-400"></div>
+        </div>
+        <form class="flex flex-col gap-3" hx-post="/servers/{{.Server.ID}}/install/minecraft" hx-target="#mc-install-status" hx-swap="outerHTML">
+          <div>
+            <label class="text-xs text-slate-400">Jar URL</label>
+            <input name="jar_url" placeholder="https://..." class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+            <p class="text-xs text-slate-500 mt-1">Provide a direct download link (Paper/Purpur/etc.).</p>
+          </div>
+          <button class="px-4 py-2 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400">Download Jar</button>
+        </form>
+
+        <div class="mt-4 border-t border-slate-800 pt-4">
+          <p class="text-xs uppercase text-slate-400 tracking-[0.2rem] mb-2">Server Type Picker</p>
+          <form id="mc-unified-form" class="grid grid-cols-1 md:grid-cols-3 gap-3" hx-post="/servers/{{.Server.ID}}/install/paper" hx-target="#mc-install-status" hx-swap="outerHTML">
+            <div>
+              <label class="text-xs text-slate-400">Server type</label>
+              <select id="mc-dist" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100"
+                onchange="onDistChange('{{.Server.ID}}')">
+                <option value="paper" selected>Paper</option>
+                <option value="folia">Folia</option>
+                <option value="spigot">Spigot</option>
+                <option value="vanilla">Vanilla</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Version</label>
+              <select id="mc-version" name="mc_version" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+                <option>Loading...</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Build</label>
+              <select id="mc-build" name="mc_build" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+                <option>Select version first</option>
+              </select>
+            </div>
+            <div class="md:col-span-3 flex items-end justify-end">
+              <button class="px-4 py-2 rounded-lg bg-indigo-500 text-slate-900 font-semibold hover:bg-indigo-400">Download</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">Scheduling</p>
+            <p class="text-slate-300 text-sm">Daily or one-off restarts/start/stop.</p>
+          </div>
+        </div>
+        <form class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4" hx-post="/servers/{{.Server.ID}}/schedules" hx-target="#schedule-list" hx-swap="outerHTML">
+          <div>
+            <label class="text-xs text-slate-400">Action</label>
+            <select name="action" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option value="restart">Restart</option>
+              <option value="start">Start</option>
+              <option value="stop">Stop</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Time</label>
+            <input type="time" name="time" value="{{.HumanTimeNow}}" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400">Frequency</label>
+            <select name="frequency" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+              <option value="daily">Daily</option>
+              <option value="once">Once</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button class="w-full px-4 py-2 rounded-lg bg-indigo-500 text-slate-900 font-semibold hover:bg-indigo-400">Add</button>
+          </div>
+        </form>
+        <div id="schedule-list">
+          {{template "partials/schedule_list.html" dict "Schedules" .Schedules}}
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+    const scrollEnd = (id) => {
+      const el = document.getElementById(id);
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+    scrollEnd('mc-console');
+    document.body.addEventListener('htmx:afterSwap', (evt) => {
+      if (evt.target && evt.target.id === 'mc-console') {
+        scrollEnd(evt.target.id);
+      }
+      if (evt.target && evt.target.id === 'paper-version') {
+        loadPaperBuilds('{{.Server.ID}}');
+      }
+      if (evt.target && evt.target.id === 'purpur-version') {
+        loadPurpurBuilds('{{.Server.ID}}');
+      }
+      if (evt.target && evt.target.id === 'folia-version') {
+        loadFoliaBuilds('{{.Server.ID}}');
+      }
+    });
+    const distSupportsBuilds = (dist) => dist === 'paper' || dist === 'folia';
+    function onDistChange(serverId) {
+      const form = document.getElementById('mc-unified-form');
+      const distSel = document.getElementById('mc-dist');
+      const versionSel = document.getElementById('mc-version');
+      const buildSel = document.getElementById('mc-build');
+      const dist = distSel.value;
+      form.setAttribute('hx-post', `/servers/${serverId}/install/${dist}`);
+      loadMCVersions(serverId, dist, versionSel, buildSel);
+    }
+    function loadMCVersions(serverId, dist, versionSel, buildSel) {
+      versionSel.innerHTML = '<option>Loading...</option>';
+      buildSel.innerHTML = distSupportsBuilds(dist) ? '<option>Select version first</option>' : '<option>Not needed</option>';
+      const endpoint = `/servers/${serverId}/${dist}/versions`;
+      fetch(endpoint)
+        .then(r => r.text())
+        .then(html => {
+          versionSel.innerHTML = html;
+          if (distSupportsBuilds(dist)) {
+            loadMCBuilds(serverId, dist, versionSel, buildSel);
+          }
+        })
+        .catch(() => { versionSel.innerHTML = '<option>Error</option>'; });
+    }
+    function loadMCBuilds(serverId, dist, versionSel, buildSel) {
+      if (!distSupportsBuilds(dist)) {
+        buildSel.innerHTML = '<option>Not needed</option>';
+        return;
+      }
+      const version = versionSel.value;
+      if (!version) {
+        buildSel.innerHTML = '<option>Select version first</option>';
+        return;
+      }
+      buildSel.innerHTML = '<option>Loading...</option>';
+      fetch(`/servers/${serverId}/${dist}/builds?version=${encodeURIComponent(version)}`)
+        .then(r => r.text())
+        .then(html => { buildSel.innerHTML = html; })
+        .catch(() => { buildSel.innerHTML = '<option>Error</option>'; });
+    }
+    // Initialize on page load
+    onDistChange('{{.Server.ID}}');
+    document.getElementById('mc-version').addEventListener('change', () => {
+      const dist = document.getElementById('mc-dist').value;
+      const versionSel = document.getElementById('mc-version');
+      const buildSel = document.getElementById('mc-build');
+      loadMCBuilds('{{.Server.ID}}', dist, versionSel, buildSel);
+    });
+  </script>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,69 @@
+{{define "servers.html"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Panel - Servers</title>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(14px); }
+    .gradient-ring { background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.2), transparent 35%), radial-gradient(circle at 80% 0%, rgba(167,139,250,0.18), transparent 30%), radial-gradient(circle at 40% 80%, rgba(74,222,128,0.18), transparent 35%); }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="fixed inset-0 gradient-ring pointer-events-none"></div>
+  <div class="relative max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <p class="uppercase tracking-[0.3rem] text-slate-400 text-xs">Control Surface</p>
+        <h1 class="text-4xl font-semibold text-white">Servers</h1>
+        <p class="text-slate-400">Create and manage multiple Rust and Minecraft instances.</p>
+      </div>
+      <form action="/logout" method="post">
+        <button class="px-3 py-2 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Logout</button>
+      </form>
+    </header>
+
+    <section class="glass rounded-2xl p-5 border border-slate-800">
+      <p class="text-xs uppercase text-slate-400 tracking-[0.2rem] mb-2">Create Server</p>
+      <form action="/servers/create" method="post" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="text-xs text-slate-400">Name</label>
+          <input name="name" required placeholder="My Rust Server" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">Type</label>
+          <select name="type" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100">
+            <option value="rust">Rust</option>
+            <option value="minecraft">Minecraft</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button class="w-full px-4 py-2 rounded-lg bg-cyan-500 text-slate-900 font-semibold hover:bg-cyan-400">Create</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {{range .Servers}}
+      <a href="/servers/{{.ID}}" class="glass rounded-2xl p-5 border border-slate-800 hover:border-cyan-400/60 transition block">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs uppercase text-slate-400 tracking-[0.2rem]">{{.Type}}</p>
+            <h2 class="text-2xl font-semibold text-white">{{.Name}}</h2>
+            <p class="text-slate-500 text-xs mt-1">ID: {{.ID}}</p>
+          </div>
+          <span class="px-3 py-1 rounded-full text-xs bg-slate-800 border border-slate-700 text-slate-200">Open</span>
+        </div>
+      </a>
+      {{else}}
+      <p class="text-slate-400">No servers yet.</p>
+      {{end}}
+    </section>
+  </div>
+</body>
+</html>
+{{end}}

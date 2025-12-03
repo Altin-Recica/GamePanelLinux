@@ -1,0 +1,17 @@
+{{define "partials/schedule_list.html"}}
+<div id="schedule-list" class="grid gap-2">
+  {{range .Schedules}}
+    <div class="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2">
+      <div>
+        <p class="text-sm text-slate-100 font-semibold capitalize">{{.Action}} {{.Server}}</p>
+        <p class="text-xs text-slate-400">At {{.Time}} · Next {{formatTime .NextRun}} · {{.Frequency}}</p>
+      </div>
+      <form hx-post="/servers/{{.ServerID}}/schedule/{{.ID}}" hx-target="#schedule-list" hx-swap="outerHTML">
+        <button class="pill bg-rose-500 text-white hover:bg-rose-400" type="submit">Delete</button>
+      </form>
+    </div>
+  {{else}}
+    <p class="text-slate-400 text-sm">No scheduled actions.</p>
+  {{end}}
+</div>
+{{end}}

@@ -1,0 +1,35 @@
+{{define "login.html"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Game Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Space Grotesk', sans-serif; }
+    .gradient-ring { background: radial-gradient(circle at 20% 20%, rgba(56,189,248,0.2), transparent 35%), radial-gradient(circle at 80% 0%, rgba(167,139,250,0.18), transparent 30%), radial-gradient(circle at 40% 80%, rgba(74,222,128,0.18), transparent 35%); }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+  <div class="absolute inset-0 gradient-ring pointer-events-none"></div>
+  <div class="relative glass rounded-2xl p-8 w-full max-w-md border border-slate-800 shadow-xl">
+    <p class="text-xs uppercase tracking-[0.3rem] text-slate-400">Game Panel</p>
+    <h1 class="text-3xl font-semibold text-white mb-2">Sign in</h1>
+    <p class="text-slate-400 text-sm mb-6">Enter the panel password to manage your servers.</p>
+    {{if .Error}}<div class="mb-4 text-sm text-red-400">{{.Error}}</div>{{end}}
+    <form method="post" class="space-y-4">
+      <div>
+        <label class="text-xs text-slate-400">Password</label>
+        <input type="password" name="password" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400" placeholder="••••••••">
+      </div>
+      <button class="w-full py-2 rounded-lg bg-cyan-500 text-slate-900 font-semibold hover:bg-cyan-400">Login</button>
+    </form>
+    <p class="text-xs text-slate-500 mt-4">Tip: set PANEL_PASSWORD env variable before starting the panel.</p>
+  </div>
+</body>
+</html>
+{{end}}
