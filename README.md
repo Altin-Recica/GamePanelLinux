@@ -1,7 +1,7 @@
 # Game Server Panel
 
 ## 📝 Description
-Lightweight Go web panel to manage Rust and Minecraft servers: start/stop/restart, live consoles, config editors, installers (SteamCMD + Paper/Folia/Spigot/Vanilla), and simple scheduling.
+Lightweight Go web panel to manage Rust and Minecraft servers: start/stop/restart, live consoles, server configuration, and simple scheduling.
 
 ## 🛠️ Tech Stack
 - Go 1.25 (standard library HTTP server, embedded templates)
