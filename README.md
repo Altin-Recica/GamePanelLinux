@@ -11,10 +11,10 @@ Lightweight Go web panel to manage Rust and Minecraft servers: start/stop/restar
 
 ## 🚀 How to Use
 ```bash
-export PANEL_PASSWORD="change-me"
-go run .
-
 go build -o gamepanel .
 ./gamepanel
+
+export PANEL_PASSWORD="change-me"
+go run .
 ```
 Open http://localhost:6767, log in, create a Rust or Minecraft server, use the installer buttons to download binaries/JARs, then start/stop/restart and manage configs/schedules from the UI.
