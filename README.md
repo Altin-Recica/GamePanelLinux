@@ -16,7 +16,7 @@ go build -o gamepanel .
 export PANEL_PASSWORD="change-me" //Use this to set whatever password you want the default is admin if you dont run this
 go run .
 ```
-Open http://localhost:6767, log in, create a Rust or Minecraft server, use the installer buttons to download binaries/JARs, then start/stop/restart and manage configs/schedules from the UI.
+Open http://localhost:6767, log in, create a Rust or Minecraft server, use the installer buttons to download JARs (For rust use the install button above it will automatically install steamcmd and rust server using steamcmd), then start/stop/restart and manage configs/schedules from the UI.
 
 Login:
 <img width="1920" height="934" alt="Login" src="https://github.com/user-attachments/assets/39555120-49b3-4677-876a-44af12595886" />
